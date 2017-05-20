@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace AssetBundles
+namespace AssetBundles.Manager
 {
 	public abstract class AssetBundleLoadOperation : IEnumerator
 	{
@@ -32,10 +32,10 @@ namespace AssetBundles
 		AsyncOperation m_Operation = null;
 	
 	
-		public AssetBundleLoadLevelSimulationOperation (string assetBundleName, string levelName, bool isAdditive, bool useGraphTool)
+		public AssetBundleLoadLevelSimulationOperation (string assetBundleName, string levelName, bool isAdditive)
 		{
 			string[] levelPaths = null;
-			if(useGraphTool) {
+            if(Settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool) {
 				levelPaths = UnityEngine.AssetBundles.GraphTool.AssetBundleBuildMap.GetBuildMap().GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, levelName);
 			} else {
 				levelPaths = UnityEditor.AssetDatabase.GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, levelName);

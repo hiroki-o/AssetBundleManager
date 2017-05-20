@@ -6,22 +6,23 @@ using System.Diagnostics;
 using System.IO;
 using System;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using UnityEditor.Utils;
 
-namespace AssetBundles
+namespace AssetBundles.Manager
 {
 	internal class LaunchAssetBundleServer : ScriptableSingleton<LaunchAssetBundleServer>
 	{
-		const string kLocalAssetbundleServerMenu = "Assets/AssetBundles/Local AssetBundle Server";
-
 		[SerializeField]
 		private int 	m_ServerPID = 0;
 
         [SerializeField]
+        private Settings.ServerSetting m_launchedSetting;
+
+        [SerializeField]
         private string     m_args;
 
-        [MenuItem (kLocalAssetbundleServerMenu)]
 		public static void ToggleLocalAssetBundleServer ()
 		{
 			bool isRunning = IsRunning();
@@ -35,31 +36,36 @@ namespace AssetBundles
 			}
 		}
 
-		[MenuItem (kLocalAssetbundleServerMenu, true)]
-		public static bool ToggleLocalAssetBundleServerValidate ()
-		{
-			bool isRunnning = IsRunning ();
-			Menu.SetChecked(kLocalAssetbundleServerMenu, isRunnning);
-			return true;
-		}
-
 		public static bool IsRunning ()
 		{
 			if (instance.m_ServerPID == 0)
 				return false;
 
-			var process = Process.GetProcessById (instance.m_ServerPID);
-			if (process == null)
-				return false;
+            try
+            {
+                var lastProcess = Process.GetProcessById (instance.m_ServerPID);
+                if (lastProcess == null) {
+                    return false;
+                }
+                return !lastProcess.HasExited;
+            }
+            catch
+            {
+            }
 
-			return !process.HasExited;
+            return false;
 		}
 
         public static string GetServerArgs () {
             return instance.m_args;
         }
 
-		static void KillRunningAssetBundleServer ()
+        public static void Restart() {
+            KillRunningAssetBundleServer ();
+            Run ();
+        }
+
+		public static void KillRunningAssetBundleServer ()
 		{
 			// Kill the last time we ran
 			try
@@ -78,14 +84,14 @@ namespace AssetBundles
 		
 		static void Run ()
 		{
-			string pathToAssetServer = Path.Combine(Application.dataPath, "AssetBundleManager/Editor/AssetBundleServer.exe");
+            var serverSetting = Settings.CurrentSetting;
+
+            string pathToAssetServer = Path.Combine(Settings.Path.BasePath, "/Editor/AssetBundleServer.exe");
 			string pathToApp = Application.dataPath.Substring(0, Application.dataPath.LastIndexOf('/'));
 	
 			KillRunningAssetBundleServer();
 			
-			BuildScript.WriteServerURL();
-
-			string bundleFolder = AssetBundleManager.UseGraphToolBundle ? "GraphToolBundles" : "AssetBundles";
+            string bundleFolder = serverSetting.AssetBundleDirectory;
 			
 			string args = Path.Combine (pathToApp, bundleFolder);
 
@@ -113,6 +119,7 @@ namespace AssetBundles
 				//Unable to start process
 				UnityEngine.Debug.LogError ("Unable Start AssetBundleServer process");
                 instance.m_args = "Not running.";
+                instance.m_launchedSetting = null;
 			}
 			else
 			{
@@ -120,6 +127,7 @@ namespace AssetBundles
 				//We seem to have launched, let's save the PID
 				instance.m_ServerPID = launchProcess.Id;
                 instance.m_args = args;
+                instance.m_launchedSetting = serverSetting;
 			}
 		}
 	}

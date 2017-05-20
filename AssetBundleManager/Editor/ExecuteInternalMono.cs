@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System;
 
-namespace AssetBundles
+namespace AssetBundles.Manager
 {
 	class MonoInstallationFinder
 	{

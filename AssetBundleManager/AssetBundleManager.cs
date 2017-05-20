@@ -20,7 +20,7 @@ using System.Collections.Generic;
 	7.	AssetBundle variants. A prioritized list of variants that should be used if the asset bundle with that variant exists, first variant in the list is the most preferred etc.
 */
 
-namespace AssetBundles
+namespace AssetBundles.Manager
 {	
 	// Loaded assetBundle contains the references count which can be used to unload dependent assetBundles automatically.
 	public class LoadedAssetBundle
@@ -42,17 +42,8 @@ namespace AssetBundles
 		public enum LogType { Info, Warning, Error };
 	
 		static LogMode m_LogMode = LogMode.All;
-		static string m_BaseDownloadingURL = "";
 		static string[] m_ActiveVariants =  {  };
 		static AssetBundleManifest m_AssetBundleManifest = null;
-	#if UNITY_EDITOR	
-		static int m_SimulateAssetBundleInEditor = -1;
-		static int m_ClearCacheOnPlay = -1;
-		static int m_UseGraphTool = -1;
-		const string kSimulateAssetBundles = "SimulateAssetBundles";
-		const string kClearCacheOnPlay = "ClearCacheOnPlay";
-		const string kUseGraphTool = "UseGraphTool";
-	#endif
 	
 		static Dictionary<string, LoadedAssetBundle> m_LoadedAssetBundles = new Dictionary<string, LoadedAssetBundle> ();
 		static Dictionary<string, WWW> m_DownloadingWWWs = new Dictionary<string, WWW> ();
@@ -64,13 +55,6 @@ namespace AssetBundles
 		{
 			get { return m_LogMode; }
 			set { m_LogMode = value; }
-		}
-	
-		// The base downloading url which is used to generate the full downloading url with the assetBundle names.
-		public static string BaseDownloadingURL
-		{
-			get { return m_BaseDownloadingURL; }
-			set { m_BaseDownloadingURL = value; }
 		}
 	
 		// Variants which is used to define the active variants.
@@ -98,63 +82,18 @@ namespace AssetBundles
 		// Flag to indicate if we want to simulate assetBundles in Editor without building them actually.
 		public static bool SimulateAssetBundleInEditor 
 		{
-			get
-			{
-				if (m_SimulateAssetBundleInEditor == -1)
-					m_SimulateAssetBundleInEditor = EditorPrefs.GetBool(kSimulateAssetBundles, true) ? 1 : 0;
-				
-				return m_SimulateAssetBundleInEditor != 0;
-			}
-			set
-			{
-				int newValue = value ? 1 : 0;
-				if (newValue != m_SimulateAssetBundleInEditor)
-				{
-					m_SimulateAssetBundleInEditor = newValue;
-					EditorPrefs.SetBool(kSimulateAssetBundles, value);
-				}
+			get {
+                return Settings.Mode != Settings.AssetBundleManagerMode.Server;
 			}
 		}
 	
 		public static bool CleanCacheOnPlay
 		{
 			get {
-				if (m_ClearCacheOnPlay == -1)
-					m_ClearCacheOnPlay = EditorPrefs.GetBool(kClearCacheOnPlay, false) ? 1 : 0;
-
-				return m_ClearCacheOnPlay != 0;
-			}
-			set {
-				int newValue = value ? 1 : 0;
-				if (newValue != m_ClearCacheOnPlay)
-				{
-					m_ClearCacheOnPlay = newValue;
-					EditorPrefs.SetBool(kClearCacheOnPlay, value);
-				}
+                return Settings.ClearCacheOnPlay;
 			}
 		}
 	
-		// Flag to indicate if we want to use asset bundle built from AssetBundleGraphTool.
-		public static bool UseGraphToolBundle 
-		{
-			get
-			{
-				if (m_UseGraphTool == -1)
-					m_UseGraphTool = EditorPrefs.GetBool(kUseGraphTool, true) ? 1 : 0;
-
-				return m_UseGraphTool != 0;
-			}
-			set
-			{
-				int newValue = value ? 1 : 0;
-				if (newValue != m_UseGraphTool)
-				{
-					m_UseGraphTool = newValue;
-					EditorPrefs.SetBool(kUseGraphTool, value);
-				}
-			}
-		}
-
 		#endif
 	
 		private static string GetStreamingAssetsPath()
@@ -168,38 +107,7 @@ namespace AssetBundles
 			else // For standalone player.
 				return "file://" +  Application.streamingAssetsPath;
 		}
-	
-		public static void SetSourceAssetBundleDirectory(string relativePath)
-		{
-			BaseDownloadingURL = GetStreamingAssetsPath() + relativePath;
-		}
-		
-		public static void SetSourceAssetBundleURL(string absolutePath)
-		{
-			BaseDownloadingURL = absolutePath + Utility.GetPlatformName() + "/";
-		}
-	
-		public static void SetDevelopmentAssetBundleServer()
-		{
-			#if UNITY_EDITOR
-			// If we're in Editor simulation mode, we don't have to setup a download URL
-			if (SimulateAssetBundleInEditor)
-				return;
-			#endif
 			
-			TextAsset urlFile = Resources.Load("AssetBundleServerURL") as TextAsset;
-			string url = (urlFile != null) ? urlFile.text.Trim() : null;
-			if (url == null || url.Length == 0)
-			{
-				Debug.LogError("Development Server URL could not be found.");
-				//AssetBundleManager.SetSourceAssetBundleURL("http://localhost:7888/" + UnityHelper.GetPlatformName() + "/");
-			}
-			else
-			{
-				AssetBundleManager.SetSourceAssetBundleURL(url);
-			}
-		}
-		
 		// Get loaded AssetBundle, only return vaild object when all the dependencies are downloaded successfully.
 		static public LoadedAssetBundle GetLoadedAssetBundle (string assetBundleName, out string error)
 		{
@@ -373,7 +281,7 @@ namespace AssetBundles
 				return true;
 	
 			WWW download = null;
-			string url = m_BaseDownloadingURL + assetBundleName;
+            string url = Settings.CurrentSetting.ServerURL + assetBundleName;
 		
 			// For manifest assetbundle, always download it as we don't have hash for it.
 			if (isLoadingAssetBundleManifest)
@@ -525,7 +433,7 @@ namespace AssetBundles
 			if (SimulateAssetBundleInEditor)
 			{
 				string[] assetPaths = null;
-				if(UseGraphToolBundle) {
+                if(Settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool) {
 					assetPaths = AssetBundleBuildMap.GetBuildMap().GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, assetName);
 				} else {
 					assetPaths = AssetDatabase.GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, assetName);
@@ -565,7 +473,7 @@ namespace AssetBundles
 	#if UNITY_EDITOR
 			if (SimulateAssetBundleInEditor)
 			{
-				operation = new AssetBundleLoadLevelSimulationOperation(assetBundleName, levelName, isAdditive, UseGraphToolBundle);
+				operation = new AssetBundleLoadLevelSimulationOperation(assetBundleName, levelName, isAdditive);
 			}
 			else
 	#endif
