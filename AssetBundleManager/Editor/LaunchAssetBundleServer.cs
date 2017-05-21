@@ -60,6 +60,10 @@ namespace AssetBundles.Manager
             return instance.m_args;
         }
 
+        public static Settings.ServerSetting GetServerSetting() {
+            return instance.m_launchedSetting;
+        }
+
         public static void Restart() {
             KillRunningAssetBundleServer ();
             Run ();

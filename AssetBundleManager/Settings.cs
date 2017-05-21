@@ -51,16 +51,8 @@ namespace AssetBundles.Manager {
 
             public static string ResourcesPath          { get { return BasePath + "/Resources/"; } }
             public static string SettingsFilePath       { get { return ResourcesPath + SettingsFileName + ".asset"; } }
-
-            public static string GUIResourceBasePath    { get { return BasePath + "/Editor/Graphics/"; } }
             #endif
         }
-//		public class GUI {
-//            public static string ClearCache               { get { return Path.GUIResourceBasePath + "NodeStyle.guiskin"; } }
-//            public static string LocalServer    { get { return Path.GUIResourceBasePath + "ConnectionPoint.png"; } }
-//            public static string InputBG            { get { return Path.GUIResourceBasePath + "InputBG.png"; } }
-//            public static string OutputBG           { get { return Path.GUIResourceBasePath + "OutputBG.png"; } }
-//		}
 
         [Serializable]
         public class ServerSetting {
