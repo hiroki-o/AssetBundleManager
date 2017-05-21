@@ -2,9 +2,8 @@
 using System.Collections;
 
 namespace AssetBundles.Manager {
-    public class LoadScenes : MonoBehaviour
+    public class SceneLoader : MonoBehaviour
     {
-    	public string sceneAssetBundle;
     	public string sceneName;
 
         public GameObject disableAfterLoad;
@@ -24,27 +23,19 @@ namespace AssetBundles.Manager {
     		// Don't destroy this gameObject as we depend on it to run the loading script.
     		DontDestroyOnLoad(gameObject);
     		
-//    		// With this code, when in-editor or using a development builds: Always use the AssetBundle Server
-//    		// (This is very dependent on the production workflow of the project. 
-//    		// 	Another approach would be to make this configurable in the standalone player.)
-//    		#if DEVELOPMENT_BUILD || UNITY_EDITOR
-//    		AssetBundleManager.SetDevelopmentAssetBundleServer ();
-//    		#else
-//    		// Use the following code if AssetBundles are embedded in the project for example via StreamingAssets folder etc:
-//    		AssetBundleManager.SetSourceAssetBundleURL(Application.dataPath + "/");
-//    		// Or customize the URL based on your deployment or configuration
-//    		//AssetBundleManager.SetSourceAssetBundleURL("http://www.MyWebsite/MyAssetBundles");
-//    		#endif
-    		
     		// Initialize AssetBundleManifest which loads the AssetBundleManifest object.
     		var request = AssetBundleManager.Initialize();
     		
-    		if (request != null)
-    			yield return StartCoroutine(request);
+            if (request != null) {
+                yield return StartCoroutine (request);
+            }
     	}
 
-    	protected IEnumerator InitializeLevelAsync (string levelName, bool isAdditive)
+    	protected IEnumerator InitializeLevelAsync (string sceneNamePath, bool isAdditive)
     	{
+            var levelName = System.IO.Path.GetFileNameWithoutExtension (sceneNamePath);
+            var sceneAssetBundle = Settings.Map.GetAssetBundleName (sceneNamePath);
+
     		// This is simply to get the elapsed time for this phase of AssetLoading.
     		float startTime = Time.realtimeSinceStartup;
 
@@ -54,7 +45,7 @@ namespace AssetBundles.Manager {
     			yield break;
     		yield return StartCoroutine(request);
 
-            var loadedScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName (sceneName);
+            var loadedScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName (levelName);
             UnityEngine.SceneManagement.SceneManager.SetActiveScene (loadedScene);
 
             // Calculate and display the elapsed time.
@@ -64,6 +55,8 @@ namespace AssetBundles.Manager {
             if (disableAfterLoad != null) {
                 disableAfterLoad.SetActive (false);
             }
+
+            GameObject.Destroy (gameObject);
     	}
     }
 }

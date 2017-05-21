@@ -168,6 +168,11 @@ namespace AssetBundles.Manager {
                             curSetting.ServerURL = url;
                         }
                     }
+
+                    bool newWithPlatformDir = EditorGUILayout.ToggleLeft("Use Platform Subdirectory", curSetting.UsePlatformSubDir);
+                    if (newWithPlatformDir != curSetting.UsePlatformSubDir) {
+                        curSetting.UsePlatformSubDir = newWithPlatformDir;
+                    }
                 }
 
                 GUILayout.Space(8f);

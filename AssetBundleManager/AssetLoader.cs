@@ -2,7 +2,7 @@
 using System.Collections;
 
 namespace AssetBundles.Manager {
-    public class LoadAssets : MonoBehaviour
+    public class AssetLoader : MonoBehaviour
     {
     	public const string AssetBundlesOutputPath = "/AssetBundles/";
     	public string assetBundleName;

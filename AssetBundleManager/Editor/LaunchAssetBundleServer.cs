@@ -86,17 +86,14 @@ namespace AssetBundles.Manager
 		{
             var serverSetting = Settings.CurrentSetting;
 
-            string pathToAssetServer = Path.Combine(Settings.Path.BasePath, "/Editor/AssetBundleServer.exe");
-			string pathToApp = Application.dataPath.Substring(0, Application.dataPath.LastIndexOf('/'));
+            string pathToAssetServer = Path.Combine(Settings.Path.BaseFullPath, "Editor/AssetBundleServer.exe");
 	
 			KillRunningAssetBundleServer();
 			
             string bundleFolder = serverSetting.AssetBundleDirectory;
 			
-			string args = Path.Combine (pathToApp, bundleFolder);
-
-			if(!Directory.Exists(args)) {
-                instance.m_args = "Directory does not exist. Build asset bundles first and create directory to run local server:" + args;
+            if(!Directory.Exists(bundleFolder)) {
+                instance.m_args = "Directory does not exist. Build asset bundles first and create directory to run local server:" + bundleFolder;
                 UnityEngine.Debug.LogError(instance.m_args);
 				return;
 			}
@@ -109,9 +106,9 @@ namespace AssetBundles.Manager
 			string monoProfile = "4.0";
 			#endif
 
-			args = string.Format("\"{0}\" {1}", args, Process.GetCurrentProcess().Id);
+            var args = string.Format("\"{0}\" {1}", bundleFolder, Process.GetCurrentProcess().Id);
 			ProcessStartInfo startInfo = ExecuteInternalMono.GetProfileStartInfoForMono(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), monoProfile, pathToAssetServer, args, true);
-			startInfo.WorkingDirectory = Path.Combine(System.Environment.CurrentDirectory, bundleFolder);
+            startInfo.WorkingDirectory = bundleFolder;
 			startInfo.UseShellExecute = false;
 			Process launchProcess = Process.Start(startInfo);
 			if (launchProcess == null || launchProcess.HasExited == true || launchProcess.Id == 0)

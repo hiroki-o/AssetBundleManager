@@ -20,17 +20,7 @@ namespace AssetBundles.Manager {
             #if UNITY_EDITOR
             public static string BasePath {
                 get {
-                    var obj = ScriptableObject.CreateInstance<Settings> ();
-                    MonoScript s = MonoScript.FromScriptableObject (obj);
-                    var configGuiPath = AssetDatabase.GetAssetPath( s );
-                    UnityEngine.Object.DestroyImmediate (obj);
-
-                    var fileInfo = new FileInfo(configGuiPath);
-                    var baseDir = fileInfo.Directory;
-
-                    Assert.AreEqual ("AssetBundleManager", baseDir.Name);
-
-                    string baseDirPath = baseDir.ToString ();
+                    string baseDirPath = BaseFullPath;
 
                     int index = baseDirPath.LastIndexOf (ASSETS_PATH);
                     Assert.IsTrue ( index >= 0 );
@@ -41,10 +31,26 @@ namespace AssetBundles.Manager {
                 }
             }
 
+            public static string BaseFullPath {
+                get {
+                    var obj = ScriptableObject.CreateInstance<Settings> ();
+                    MonoScript s = MonoScript.FromScriptableObject (obj);
+                    var configGuiPath = AssetDatabase.GetAssetPath( s );
+                    UnityEngine.Object.DestroyImmediate (obj);
+
+                    var fileInfo = new FileInfo(configGuiPath);
+                    var baseDir = fileInfo.Directory;
+
+                    Assert.AreEqual ("AssetBundleManager", baseDir.Name);
+
+                    return baseDir.ToString ();
+                }
+            }
+
             public const string ASSETS_PATH = "Assets/";
 
             public static string ResourcesPath          { get { return BasePath + "/Resources/"; } }
-            public static string SettingsFilePath       { get { return ResourcesPath + "/" + SettingsFileName + ".asset"; } }
+            public static string SettingsFilePath       { get { return ResourcesPath + SettingsFileName + ".asset"; } }
 
             public static string GUIResourceBasePath    { get { return BasePath + "/Editor/Graphics/"; } }
             #endif
@@ -64,10 +70,12 @@ namespace AssetBundles.Manager {
             [SerializeField] private string m_serverURL;
             [SerializeField] private string m_localAssetBundleDirectory;
             [SerializeField] private bool m_isLocalServer;
+            [SerializeField] private bool m_withPlatformSubDir;
 
             public ServerSetting(string name, bool isLocalServer) {
                 m_name = name;
                 m_isLocalServer = isLocalServer;
+                m_withPlatformSubDir = false;
                 m_localAssetBundleDirectory = string.Empty;
                 m_serverURL = string.Empty;
             }
@@ -87,10 +95,16 @@ namespace AssetBundles.Manager {
 
             public string ServerURL {
                 get {
+                    string url;
                     if (m_isLocalServer) {
-                        return GetLocalServerURL ();
+                        url = GetLocalServerURL ();
                     } else {
-                        return m_serverURL;
+                        url = m_serverURL;
+                    }
+                    if (m_withPlatformSubDir) {
+                        return string.Format ("{0}{1}/",url, Utility.GetPlatformName());
+                    } else {
+                        return url;
                     }
                 }
                 #if UNITY_EDITOR
@@ -117,6 +131,18 @@ namespace AssetBundles.Manager {
                 get {
                     return m_isLocalServer;
                 }
+            }
+
+            public bool UsePlatformSubDir {
+                get {
+                    return m_withPlatformSubDir;
+                }
+                #if UNITY_EDITOR
+                set {
+                    m_withPlatformSubDir = value;
+                    Settings.SetSettingsDirty ();
+                }
+                #endif
             }
 
             private static string GetLocalServerURL() {
@@ -155,6 +181,7 @@ namespace AssetBundles.Manager {
         [SerializeField] ServerSetting m_devBuildSetting;
         [SerializeField] ServerSetting m_releaseBuildSetting;
         [SerializeField] AssetBundleManagerMode m_mode;
+        [SerializeField] AssetMap m_assetMap;
         [SerializeField] private bool m_clearCacheOnPlay;
         #if UNITY_EDITOR
         [SerializeField] private int m_version;
@@ -179,6 +206,7 @@ namespace AssetBundles.Manager {
                     }
 
                     AssetDatabase.CreateAsset(s_settings, Path.SettingsFilePath);
+                    AssetDatabase.SaveAssets();
                     #endif
                 }
             }
@@ -287,6 +315,19 @@ namespace AssetBundles.Manager {
             set {
                 var s = GetSettings ();
                 s.m_mode = value;
+                EditorUtility.SetDirty (s);
+            }
+            #endif
+        }
+
+        public static AssetMap Map {
+            get {
+                return GetSettings().m_assetMap;
+            }
+            #if UNITY_EDITOR
+            set {
+                var s = GetSettings ();
+                s.m_assetMap = value;
                 EditorUtility.SetDirty (s);
             }
             #endif

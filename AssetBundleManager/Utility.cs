@@ -7,8 +7,6 @@ namespace AssetBundles.Manager
 {
 	public class Utility
 	{
-		public const string AssetBundlesOutputPath = "AssetBundles";
-	
 		public static string GetPlatformName()
 		{
 	#if UNITY_EDITOR

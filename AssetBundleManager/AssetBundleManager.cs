@@ -140,14 +140,8 @@ namespace AssetBundles.Manager
 			return bundle;
 		}
 	
-		static public AssetBundleLoadManifestOperation Initialize ()
-		{
-			return Initialize(Utility.GetPlatformName());
-		}
-			
-	
 		// Load AssetBundleManifest.
-		static public AssetBundleLoadManifestOperation Initialize (string manifestAssetBundleName)
+		static public AssetBundleLoadManifestOperation Initialize ()
 		{
 	#if UNITY_EDITOR
 			Log (LogType.Info, "Simulation Mode: " + (SimulateAssetBundleInEditor ? "Enabled" : "Disabled"));
@@ -169,8 +163,8 @@ namespace AssetBundles.Manager
 			}
 	#endif
 
-			LoadAssetBundle(manifestAssetBundleName, true);
-			var operation = new AssetBundleLoadManifestOperation (manifestAssetBundleName, "AssetBundleManifest", typeof(AssetBundleManifest));
+            LoadAssetBundle(Settings.Map.ManifestFileName, true);
+            var operation = new AssetBundleLoadManifestOperation (Settings.Map.ManifestFileName, "AssetBundleManifest", typeof(AssetBundleManifest));
 			m_InProgressOperations.Add (operation);
 			return operation;
 		}
