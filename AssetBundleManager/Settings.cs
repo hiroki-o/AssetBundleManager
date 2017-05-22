@@ -61,6 +61,7 @@ namespace AssetBundles.Manager {
             [SerializeField] private string m_name;
             [SerializeField] private string m_serverURL;
             [SerializeField] private string m_localAssetBundleDirectory;
+            [SerializeField] private string m_manifestFileName;
             [SerializeField] private bool m_isLocalServer;
             [SerializeField] private bool m_withPlatformSubDir;
 
@@ -114,6 +115,22 @@ namespace AssetBundles.Manager {
                 #if UNITY_EDITOR
                 set {
                     m_localAssetBundleDirectory = value;
+                    Settings.SetSettingsDirty ();
+                }
+                #endif
+            }
+
+            public string ManifestFileName {
+                get {
+                    if (m_withPlatformSubDir) {
+                        return Utility.GetPlatformName ();
+                    } else {
+                        return m_manifestFileName;
+                    }
+                }
+                #if UNITY_EDITOR
+                set {
+                    m_manifestFileName = value;
                     Settings.SetSettingsDirty ();
                 }
                 #endif

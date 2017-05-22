@@ -163,8 +163,8 @@ namespace AssetBundles.Manager
 			}
 	#endif
 
-            LoadAssetBundle(Settings.Map.ManifestFileName, true);
-            var operation = new AssetBundleLoadManifestOperation (Settings.Map.ManifestFileName, "AssetBundleManifest", typeof(AssetBundleManifest));
+            LoadAssetBundle(Settings.CurrentSetting.ManifestFileName, true);
+            var operation = new AssetBundleLoadManifestOperation (Settings.CurrentSetting.ManifestFileName, "AssetBundleManifest", typeof(AssetBundleManifest));
 			m_InProgressOperations.Add (operation);
 			return operation;
 		}
@@ -309,7 +309,7 @@ namespace AssetBundles.Manager
 			m_Dependencies.Add(assetBundleName, dependencies); 
 			Debug.Log("[Dependency]" + assetBundleName + " => " + string.Concat(dependencies));
 			for (int i=0;i<dependencies.Length;i++) {
-				Debug.Log("[Loading Dependency] loading" + dependencies[i]);
+				Debug.Log("[Loading Dependency] loading " + dependencies[i]);
 				LoadAssetBundleInternal(dependencies[i], false);
 			}
 		}

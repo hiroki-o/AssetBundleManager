@@ -173,6 +173,18 @@ namespace AssetBundles.Manager {
                     if (newWithPlatformDir != curSetting.UsePlatformSubDir) {
                         curSetting.UsePlatformSubDir = newWithPlatformDir;
                     }
+
+                    using (new EditorGUI.DisabledScope (curSetting.UsePlatformSubDir)) {
+                        if (string.IsNullOrEmpty (curSetting.ManifestFileName)) {
+                            if (curSetting.IsLocalServer) {
+                                curSetting.ManifestFileName = Path.GetFileName (curSetting.AssetBundleDirectory);
+                            }
+                        }
+                        var newManifestName = EditorGUILayout.TextField ("Manifest File Name", curSetting.ManifestFileName);
+                        if (newManifestName != curSetting.ManifestFileName) {
+                            curSetting.ManifestFileName = newManifestName;
+                        }
+                    }
                 }
 
                 GUILayout.Space(8f);
