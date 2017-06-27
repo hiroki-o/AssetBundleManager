@@ -19,7 +19,6 @@ namespace AssetBundles.Manager {
 
         public override void OnInspectorGUI () {
 
-            var loader = target as SceneLoader;
             m_sceneNamePath = serializedObject.FindProperty("sceneName");
             m_disableAfterLoad = serializedObject.FindProperty("disableAfterLoad");
 
