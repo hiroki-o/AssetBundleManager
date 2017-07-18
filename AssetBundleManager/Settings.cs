@@ -189,7 +189,7 @@ namespace AssetBundles.Manager {
             }
 
             private static string GetStreamingAssetsURL(string str) {
-                return string.Format ("file://{0}/StreamingAssets/{1}", Application.dataPath, str);
+                return string.Format ("file://{0}/{1}", Application.streamingAssetsPath, str);
             }
         }
 
