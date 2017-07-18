@@ -49,7 +49,7 @@ namespace AssetBundles.Manager {
 
             public const string ASSETS_PATH = "Assets/";
 
-            public static string ResourcesPath          { get { return BasePath + "/Resources/"; } }
+            public static string ResourcesPath          { get { return ASSETS_PATH + "Resources/"; } }
             public static string SettingsFilePath       { get { return ResourcesPath + SettingsFileName + ".asset"; } }
             #endif
         }
