@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 namespace AssetBundles.Manager
 {
@@ -89,16 +90,18 @@ namespace AssetBundles.Manager
 				return false;
 			
 			LoadedAssetBundle bundle = AssetBundleManager.GetLoadedAssetBundle (m_AssetBundleName, out m_DownloadingError);
-			if (bundle != null)
-			{
-				if (m_IsAdditive)
-					m_Request = Application.LoadLevelAdditiveAsync (m_LevelName);
-				else
-					m_Request = Application.LoadLevelAsync (m_LevelName);
-				return false;
-			}
-			else
-				return true;
+            if (bundle != null) {
+                var mode = LoadSceneMode.Single;
+                if (m_IsAdditive) {
+                    mode = LoadSceneMode.Additive;
+                }
+
+                m_Request = SceneManager.LoadSceneAsync (m_LevelName, mode);
+
+                return false;
+            } else {
+                return true;
+            }
 		}
 		
 		public override bool IsDone ()
