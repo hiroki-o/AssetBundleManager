@@ -4,9 +4,24 @@ using System.Collections;
 namespace AssetBundles.Manager {
     public class SceneLoader : MonoBehaviour
     {
-    	public string sceneName;
+        private static string kNEXTSCENE = "NextScene";
+
+        public static string currentSceneName;
+
+        public string sceneName;
+        public bool isAdditive;
 
         public GameObject disableAfterLoad;
+
+        static public string NextScene {
+            get {
+                return PlayerPrefs.GetString (kNEXTSCENE, currentSceneName);
+            }
+            set {
+                PlayerPrefs.SetString (kNEXTSCENE, value);
+            }
+        }
+
     	
     	// Use this for initialization
     	IEnumerator Start ()
@@ -14,12 +29,18 @@ namespace AssetBundles.Manager {
     		yield return StartCoroutine(Initialize() );
     		
     		// Load level.
-    		yield return StartCoroutine(InitializeLevelAsync (sceneName, true) );
+            yield return StartCoroutine(InitializeLevelAsync (sceneName, isAdditive) );
     	}
 
     	// Initialize the downloading url and AssetBundleManifest object.
     	protected IEnumerator Initialize()
     	{
+            currentSceneName = sceneName;
+
+            if (!string.IsNullOrEmpty (NextScene)) {
+                sceneName = NextScene;
+            }
+
     		// Don't destroy this gameObject as we depend on it to run the loading script.
     		DontDestroyOnLoad(gameObject);
     		
@@ -40,7 +61,7 @@ namespace AssetBundles.Manager {
     		float startTime = Time.realtimeSinceStartup;
 
     		// Load level from assetBundle.
-    		AssetBundleLoadOperation request = AssetBundleManager.LoadLevelAsync(sceneAssetBundle, levelName, isAdditive);
+            AssetBundleLoadOperation request = AssetBundleManager.LoadLevelAsync(sceneAssetBundle, levelName, isAdditive);
     		if (request == null)
     			yield break;
     		yield return StartCoroutine(request);
