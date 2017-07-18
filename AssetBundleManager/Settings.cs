@@ -63,11 +63,13 @@ namespace AssetBundles.Manager {
             [SerializeField] private string m_localAssetBundleDirectory;
             [SerializeField] private string m_manifestFileName;
             [SerializeField] private bool m_isLocalServer;
+            [SerializeField] private bool m_isStreamingAssets;
             [SerializeField] private bool m_withPlatformSubDir;
 
-            public ServerSetting(string name, bool isLocalServer) {
+            public ServerSetting(string name, bool isLocalServer, bool isStreamingAssets) {
                 m_name = name;
                 m_isLocalServer = isLocalServer;
+                m_isStreamingAssets = isStreamingAssets;
                 m_withPlatformSubDir = false;
                 m_localAssetBundleDirectory = string.Empty;
                 m_serverURL = string.Empty;
@@ -91,6 +93,8 @@ namespace AssetBundles.Manager {
                     string url;
                     if (m_isLocalServer) {
                         url = GetLocalServerURL ();
+                    }else if(m_isStreamingAssets) {
+                        url = GetStreamingAssetsURL(m_serverURL);
                     } else {
                         url = m_serverURL;
                     }
@@ -142,6 +146,12 @@ namespace AssetBundles.Manager {
                 }
             }
 
+            public bool IsStreamingAssets {
+                get {
+                    return m_isStreamingAssets;
+                }
+            }
+
             public bool UsePlatformSubDir {
                 get {
                     return m_withPlatformSubDir;
@@ -176,6 +186,10 @@ namespace AssetBundles.Manager {
                     s_localServerURL = "http://"+localIP+":7888/";
                 }
                 return s_localServerURL;
+            }
+
+            private static string GetStreamingAssetsURL(string str) {
+                return string.Format ("file://{0}/StreamingAssets/{1}", Application.dataPath, str);
             }
         }
 
@@ -344,7 +358,7 @@ namespace AssetBundles.Manager {
 
         #if UNITY_EDITOR
         public static ServerSetting CreateServerSetting(string name, bool isLocalServer) {
-            var newSetting = new ServerSetting (name, isLocalServer);
+            var newSetting = new ServerSetting (name, isLocalServer, false);
             var s = GetSettings ();
             s.m_settings.Add (newSetting);
             s.m_currentSetting = newSetting;
@@ -352,6 +366,17 @@ namespace AssetBundles.Manager {
 
             return newSetting;
         }
+
+            public static ServerSetting CreateStreamingAssetSetting(string name) {
+                var newSetting = new ServerSetting (name, false, true);
+            var s = GetSettings ();
+            s.m_settings.Add (newSetting);
+            s.m_currentSetting = newSetting;
+            EditorUtility.SetDirty (s);
+
+            return newSetting;
+        }
+
 
         public static void RemoveServerSetting(ServerSetting removingSetting) {
             var s = GetSettings();

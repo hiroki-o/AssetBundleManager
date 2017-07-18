@@ -93,6 +93,10 @@ namespace AssetBundles.Manager {
                         Settings.CreateServerSetting("New Remote Server", false);
                         ConfigureMenuSelectionName ();
                     });
+                    menu.AddItem(new GUIContent("New Streaming Assets..."), false, () => {
+                        Settings.CreateStreamingAssetSetting("New Streaming Assets");
+                        ConfigureMenuSelectionName ();
+                    });
                 }
 
                 menu.DropDown(new Rect(4f, 8f, 0f, 0f));
@@ -162,6 +166,9 @@ namespace AssetBundles.Manager {
                         if (newFolder != curSetting.AssetBundleDirectory) {
                             curSetting.AssetBundleDirectory = newFolder;
                         }
+                    }
+                    if (curSetting.IsStreamingAssets) {
+                        // do nothing
                     } else {
                         var url = EditorGUILayout.TextField("Server URL", curSetting.ServerURL);
                         if (url != curSetting.ServerURL) {
