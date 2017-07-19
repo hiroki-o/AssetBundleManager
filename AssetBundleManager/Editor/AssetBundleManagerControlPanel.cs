@@ -124,6 +124,21 @@ namespace AssetBundles.Manager {
                                                     s.AssetBundleDirectory,
                                                     Application.dataPath + "/../");
                                 if (newFolder != s.AssetBundleDirectory) {
+
+                                    var projectPath = Directory.GetParent(Application.dataPath).ToString();
+
+                                    if(projectPath == newFolder) {
+                                        newFolder = string.Empty;
+                                    } else {
+                                        var index = newFolder.IndexOf(projectPath);
+                                        if(index >= 0 ) {
+                                            newFolder = newFolder.Substring(projectPath.Length + index);
+                                            if(newFolder.IndexOf('/') == 0) {
+                                                newFolder = newFolder.Substring(1);
+                                            }
+                                        }
+                                    }
+
                                     s.AssetBundleDirectory = newFolder;
                                 }
                             }

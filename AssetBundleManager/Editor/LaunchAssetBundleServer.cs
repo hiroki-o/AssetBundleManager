@@ -95,7 +95,12 @@ namespace AssetBundles.Manager
 			KillRunningAssetBundleServer();
 			
             string bundleFolder = serverSetting.AssetBundleDirectory;
-			
+
+            if (bundleFolder.IndexOf ('/') != 0) {
+                var projectPath = Directory.GetParent(Application.dataPath).ToString();
+                bundleFolder = Path.Combine (projectPath, bundleFolder);
+            }
+
             if(!Directory.Exists(bundleFolder)) {
                 instance.m_args = "Directory does not exist. Build asset bundles first and create directory to run local server:" + bundleFolder;
                 UnityEngine.Debug.LogError(instance.m_args);
