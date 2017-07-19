@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 
 namespace AssetBundles.Manager {
@@ -11,7 +12,7 @@ namespace AssetBundles.Manager {
         public string sceneName;
         public bool isAdditive;
 
-        public GameObject disableAfterLoad;
+        public GameObject loadEventHandler;
 
         static public string NextScene {
             get {
@@ -62,9 +63,22 @@ namespace AssetBundles.Manager {
 
     		// Load level from assetBundle.
             AssetBundleLoadOperation request = AssetBundleManager.LoadLevelAsync(sceneAssetBundle, levelName, isAdditive);
-    		if (request == null)
-    			yield break;
+            if (request == null) {
+                if (loadEventHandler != null) {
+                    loadEventHandler.SendMessage ("OnSceneLoadError");
+                }
+                yield break;
+            }
     		yield return StartCoroutine(request);
+
+            if (request.IsError()) {
+                if (request == null) {
+                    if (loadEventHandler != null) {
+                        loadEventHandler.SendMessage ("OnSceneLoadError");
+                    }
+                    yield break;
+                }
+            }
 
             var loadedScene = UnityEngine.SceneManagement.SceneManager.GetSceneByName (levelName);
             UnityEngine.SceneManagement.SceneManager.SetActiveScene (loadedScene);
@@ -73,8 +87,8 @@ namespace AssetBundles.Manager {
     		float elapsedTime = Time.realtimeSinceStartup - startTime;
     		Debug.Log("Finished loading scene " + levelName + " in " + elapsedTime + " seconds" );
 
-            if (disableAfterLoad != null) {
-                disableAfterLoad.SetActive (false);
+            if (loadEventHandler != null) {
+                loadEventHandler.SendMessage ("OnSceneLoaded");
             }
 
             GameObject.Destroy (gameObject);

@@ -25,12 +25,15 @@ namespace AssetBundles.Manager
 		abstract public bool Update ();
 		
 		abstract public bool IsDone ();
+
+        abstract public bool IsError ();
 	}
 	
 	#if UNITY_EDITOR
 	public class AssetBundleLoadLevelSimulationOperation : AssetBundleLoadOperation
 	{	
 		AsyncOperation m_Operation = null;
+        bool m_isError;
 	
 	
 		public AssetBundleLoadLevelSimulationOperation (string assetBundleName, string levelName, bool isAdditive)
@@ -48,6 +51,7 @@ namespace AssetBundles.Manager
 				//        from that there right scene does not exist in the asset bundle...
 				
 				Debug.LogError("There is no scene with name \"" + levelName + "\" in " + assetBundleName);
+                m_isError = true;
 				return;
 			}
 			
@@ -66,6 +70,10 @@ namespace AssetBundles.Manager
 		{		
 			return m_Operation == null || m_Operation.isDone;
 		}
+
+        public override bool IsError() {
+            return m_isError;
+        }
 	}
 	
 	#endif
@@ -108,7 +116,7 @@ namespace AssetBundles.Manager
 		{
 			// Return if meeting downloading error.
 			// m_DownloadingError might come from the dependency downloading.
-			if (m_Request == null && m_DownloadingError != null)
+            if (m_Request == null && !string.IsNullOrEmpty(m_DownloadingError))
 			{
 				Debug.LogError(m_DownloadingError);
 				return true;
@@ -116,6 +124,10 @@ namespace AssetBundles.Manager
 			
 			return m_Request != null && m_Request.isDone;
 		}
+
+        public override bool IsError() {
+            return !string.IsNullOrEmpty(m_DownloadingError);
+        }
 	}
 	
 	public abstract class AssetBundleLoadAssetOperation : AssetBundleLoadOperation
@@ -146,6 +158,10 @@ namespace AssetBundles.Manager
 		{
 			return true;
 		}
+
+        public override bool IsError() {
+            return false;
+        }
 	}
 	
 	public class AssetBundleLoadAssetOperationFull : AssetBundleLoadAssetOperation
@@ -194,7 +210,7 @@ namespace AssetBundles.Manager
 		{
 			// Return if meeting downloading error.
 			// m_DownloadingError might come from the dependency downloading.
-			if (m_Request == null && m_DownloadingError != null)
+            if (m_Request == null && !string.IsNullOrEmpty(m_DownloadingError))
 			{
 				Debug.LogError(m_DownloadingError);
 				return true;
@@ -202,6 +218,10 @@ namespace AssetBundles.Manager
 	
 			return m_Request != null && m_Request.isDone;
 		}
+
+        public override bool IsError() {
+            return !string.IsNullOrEmpty(m_DownloadingError);
+        }
 	}
 	
 	public class AssetBundleLoadManifestOperation : AssetBundleLoadAssetOperationFull

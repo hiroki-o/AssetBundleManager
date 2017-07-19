@@ -218,6 +218,10 @@ namespace AssetBundles.Manager
             else
 #endif
             {
+                if (m_AssetBundleManifest == null) {
+                    Debug.LogError("AssetBundle Manifest is not loaded. Aborting RemapVariantName()");
+                    return null;
+                }
                 bundlesWithVariant = m_AssetBundleManifest.GetAllAssetBundlesWithVariant();
             }
 
@@ -433,6 +437,9 @@ namespace AssetBundles.Manager
 
             AssetBundleLoadAssetOperation operation = null;
             assetBundleName = RemapVariantName(assetBundleName);
+            if (assetBundleName == null) {
+                return null;
+            }
 
 #if UNITY_EDITOR
             if (SimulateAssetBundleInEditor)
@@ -477,6 +484,9 @@ namespace AssetBundles.Manager
             AssetBundleLoadOperation operation = null;
 
             assetBundleName = RemapVariantName(assetBundleName);
+            if (assetBundleName == null) {
+                return null;
+            }
 
 #if UNITY_EDITOR
             if (SimulateAssetBundleInEditor)

@@ -11,7 +11,7 @@ namespace AssetBundles.Manager {
     public class SceneLoaderEditor : Editor {
 
         [SerializeField] private SerializedProperty m_sceneNamePath;
-        [SerializeField] private SerializedProperty m_disableAfterLoad;
+        [SerializeField] private SerializedProperty m_loadEventHandler;
 
         public override bool RequiresConstantRepaint() {
             return true;
@@ -20,7 +20,7 @@ namespace AssetBundles.Manager {
         public override void OnInspectorGUI () {
 
             m_sceneNamePath = serializedObject.FindProperty("sceneName");
-            m_disableAfterLoad = serializedObject.FindProperty("disableAfterLoad");
+            m_loadEventHandler = serializedObject.FindProperty("loadEventHandler");
 
             var map = Settings.Map;
             List<string> scenes = null;
@@ -51,7 +51,7 @@ namespace AssetBundles.Manager {
                 m_sceneNamePath.stringValue = scenes[newSceneIndex];
             }
 
-            EditorGUILayout.PropertyField (m_disableAfterLoad);
+            EditorGUILayout.PropertyField (m_loadEventHandler);
 
             serializedObject.ApplyModifiedProperties ();
         }

@@ -14,6 +14,8 @@ namespace AssetBundles.Manager {
         private static AssetBundleManagerControlPanel s_window;
 
         private string m_menuTitle;
+        List<ServerSetting> m_removingItem;
+        Vector2 m_scroll;
 
         [MenuItem("Window/AssetBundle Manager/Open Control Panel...", false, 4)]
         public static void Open () {
@@ -27,7 +29,9 @@ namespace AssetBundles.Manager {
         }
 
         private void Init() {
-            this.titleContent = new GUIContent("AssetBundle Manager");
+            this.titleContent = new GUIContent("ABM Server");
+            m_removingItem = new List<ServerSetting>();
+
             ConfigureMenuSelectionName ();
         }
 
@@ -56,51 +60,6 @@ namespace AssetBundles.Manager {
         }
 
         public void OnDisable() {
-        }
-
-        private void DrawServerSettingDropDown(Settings.ServerSetting current, string title, bool includeSimulation, bool includeAddServer, Func<Settings.ServerSetting, bool> selector) {
-
-            if (GUILayout.Button(new GUIContent(title, "Select Server"), EditorStyles.popup)) {
-                GenericMenu menu = new GenericMenu();
-
-                if (includeSimulation) {
-                    menu.AddItem(new GUIContent("Simulation Mode"), false, () => {
-                        Settings.Mode = Settings.AssetBundleManagerMode.SimulationMode;
-                        ConfigureMenuSelectionName ();
-                    });
-                    menu.AddItem(new GUIContent("Simulation Mode(GraphTool)"), false, () => {
-                        Settings.Mode = Settings.AssetBundleManagerMode.SimulationModeGraphTool;
-                        ConfigureMenuSelectionName ();
-                    });
-                    menu.AddSeparator ("");
-                }
-
-                foreach(var s in Settings.ServerSettings) {
-                    var curSetting = s;
-                    menu.AddItem(new GUIContent(curSetting.Name), false, () => {
-                        selector(s);
-                        Settings.SetSettingsDirty();
-                    });
-                }
-
-                if (includeAddServer) {
-                    menu.AddSeparator("");
-                    menu.AddItem(new GUIContent("New Local Server..."), false, () => {
-                        Settings.CreateServerSetting("New Local Server", true);
-                        ConfigureMenuSelectionName ();
-                    });
-                    menu.AddItem(new GUIContent("New Remote Server..."), false, () => {
-                        Settings.CreateServerSetting("New Remote Server", false);
-                        ConfigureMenuSelectionName ();
-                    });
-                    menu.AddItem(new GUIContent("New Streaming Assets..."), false, () => {
-                        Settings.CreateStreamingAssetSetting("New Streaming Assets");
-                        ConfigureMenuSelectionName ();
-                    });
-                }
-
-                menu.DropDown(new Rect(4f, 8f, 0f, 0f));
-            }            
         }
 
         public string DrawFolderSelector(string label, 
@@ -134,7 +93,8 @@ namespace AssetBundles.Manager {
 
         public void OnGUI () {
 
-            using (new EditorGUILayout.VerticalScope()) {
+            using (var scroll = new EditorGUILayout.ScrollViewScope(m_scroll)) {
+                m_scroll = scroll.scrollPosition;
 
                 bool newClearCache = EditorGUILayout.ToggleLeft("Clear Cache On Play", AssetBundleManager.CleanCacheOnPlay);
                 if (newClearCache != AssetBundleManager.CleanCacheOnPlay) {
@@ -142,92 +102,158 @@ namespace AssetBundles.Manager {
                 }
 
                 GUILayout.Space(12f);
-                GUILayout.Label ("Editor Server Setting", "BoldLabel");
-                DrawServerSettingDropDown (Settings.CurrentSetting, m_menuTitle, true, true, (Settings.ServerSetting s) => {
-                    Settings.CurrentSetting = s;
-                    Settings.Mode = Settings.AssetBundleManagerMode.Server;
-                    ConfigureMenuSelectionName ();
-                    return true;
-                });
-
-                var curSetting = Settings.CurrentSetting;
-                if (curSetting != null) {
-                    var newName = EditorGUILayout.TextField("Name", curSetting.Name);
-                    if (newName != curSetting.Name) {
-                        curSetting.Name = newName;
-                        ConfigureMenuSelectionName ();
-                    }
-
-                    if (curSetting.IsLocalServer) {
-                        var newFolder = DrawFolderSelector ("AssetBundle Directory", 
-                            "Select AssetBundle Directory", 
-                            curSetting.AssetBundleDirectory,
-                            Application.dataPath + "/../");
-                        if (newFolder != curSetting.AssetBundleDirectory) {
-                            curSetting.AssetBundleDirectory = newFolder;
+                GUILayout.Label ("Server Settings", "BoldLabel");
+                foreach (var s in Settings.ServerSettings) {
+                    using (new EditorGUILayout.VerticalScope ("box")) {
+                        var newName = EditorGUILayout.TextField("Name", s.Name);
+                        if (newName != s.Name) {
+                            s.Name = newName;
+                            ConfigureMenuSelectionName ();
                         }
-                    }
-                    if (curSetting.IsStreamingAssets) {
-                        // do nothing
-                    } else {
-                        var url = EditorGUILayout.TextField("Server URL", curSetting.ServerURL);
-                        if (url != curSetting.ServerURL) {
-                            curSetting.ServerURL = url;
+
+                        var newType = (ServerSettingType)EditorGUILayout.EnumPopup ("Server Type", s.ServerType);
+                        if (newType != s.ServerType) {
+                            s.ServerType = newType;
                         }
-                    }
 
-                    bool newWithPlatformDir = EditorGUILayout.ToggleLeft("Use Platform Subdirectory", curSetting.UsePlatformSubDir);
-                    if (newWithPlatformDir != curSetting.UsePlatformSubDir) {
-                        curSetting.UsePlatformSubDir = newWithPlatformDir;
-                    }
+                        switch (s.ServerType) {
+                        case ServerSettingType.Local:
+                            {
+                                var newFolder = DrawFolderSelector ("AssetBundle Directory", 
+                                                    "Select AssetBundle Directory", 
+                                                    s.AssetBundleDirectory,
+                                                    Application.dataPath + "/../");
+                                if (newFolder != s.AssetBundleDirectory) {
+                                    s.AssetBundleDirectory = newFolder;
+                                }
+                            }
+                            break;
+                        case ServerSettingType.Remote:
+                            {
+                                var url = EditorGUILayout.TextField ("Server URL", s.ServerURL);
+                                if (url != s.ServerURL) {
+                                    s.ServerURL = url;
+                                }
+                            }
+                            break;
+                        }
 
-                    using (new EditorGUI.DisabledScope (curSetting.UsePlatformSubDir)) {
-                        if (string.IsNullOrEmpty (curSetting.ManifestFileName)) {
-                            if (curSetting.IsLocalServer) {
-                                curSetting.ManifestFileName = Path.GetFileName (curSetting.AssetBundleDirectory);
+                        bool newWithPlatformDir = EditorGUILayout.ToggleLeft("Use Platform Subdirectory", s.UsePlatformSubDir);
+                        if (newWithPlatformDir != s.UsePlatformSubDir) {
+                            s.UsePlatformSubDir = newWithPlatformDir;
+                        }
+
+                        using (new EditorGUI.DisabledScope (s.UsePlatformSubDir)) {
+                            if (string.IsNullOrEmpty (s.ManifestFileName)) {
+                                if (s.ServerType == ServerSettingType.Local) {
+                                    s.ManifestFileName = Path.GetFileName (s.AssetBundleDirectory);
+                                }
+                            }
+                            var newManifestName = EditorGUILayout.TextField ("Manifest File Name", s.ManifestFileName);
+                            if (newManifestName != s.ManifestFileName) {
+                                s.ManifestFileName = newManifestName;
                             }
                         }
-                        var newManifestName = EditorGUILayout.TextField ("Manifest File Name", curSetting.ManifestFileName);
-                        if (newManifestName != curSetting.ManifestFileName) {
-                            curSetting.ManifestFileName = newManifestName;
+
+                        if(GUILayout.Button("Remove")) {
+                            m_removingItem.Add (s);
                         }
                     }
+                }
+
+                if (m_removingItem.Count > 0) {
+                    foreach (var r in m_removingItem) {
+                        Settings.RemoveServerSetting (r);
+                    }
+                    m_removingItem.Clear ();
                 }
 
                 GUILayout.Space(8f);
+                if(GUILayout.Button("Add Server Setting")) {
+                    Settings.CreateServerSetting ("New Setting", ServerSettingType.Local);
+                }
 
-                GUILayout.Space(4f);
-                GUILayout.Label ("Development Server", "BoldLabel");
-                string devTitle = (Settings.DevelopmentBuildSetting == null) ? "<select server>" : Settings.DevelopmentBuildSetting.Name;
-                DrawServerSettingDropDown (Settings.DevelopmentBuildSetting, devTitle, false, false, (Settings.ServerSetting s) => {
-                    Settings.DevelopmentBuildSetting = s;
-                    return true;
-                });
-                GUILayout.Space(4f);
-                GUILayout.Label ("Release Server", "BoldLabel");
-                string relTitle = (Settings.ReleaseBuildSetting == null) ? "<select server>" : Settings.ReleaseBuildSetting.Name;
-                DrawServerSettingDropDown (Settings.ReleaseBuildSetting, relTitle, false, false, (Settings.ServerSetting s) => {
-                    Settings.ReleaseBuildSetting = s;
-                    return true;
-                });
+
+                GUILayout.Space(12f);
+                GUILayout.Label ("Editor Server Setting", "BoldLabel");
+
+
+                var names = Settings.ServerSettings.Select (x => x.Name).ToArray ();
+                var namesWithSim = new string[names.Length + 2];
+                namesWithSim [0] = "Simulation Mode";
+                namesWithSim [1] = "Simulation Mode(GraphTool)";
+                Array.Copy (names, 0, namesWithSim, 2, names.Length);
+
+                int editorIndex = 0;
+                if (Settings.Mode == Settings.AssetBundleManagerMode.SimulationMode) {
+                    editorIndex = 0;
+                }
+                else if (Settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool) {
+                    editorIndex = 1;
+                }
+                else {
+                    editorIndex = (Settings.CurrentSetting == null) ? -1 : Settings.ServerSettings.IndexOf(Settings.CurrentSetting) + 2;
+                }
+
+                int devIndex = (Settings.DevelopmentBuildSetting == null) ? -1 : Settings.ServerSettings.IndexOf(Settings.DevelopmentBuildSetting);
+                int releaseIndex = (Settings.ReleaseBuildSetting == null) ? -1 : Settings.ServerSettings.IndexOf(Settings.ReleaseBuildSetting);
+                int streamingIndex = (Settings.StreamingAssetsSetting == null) ? -1 : Settings.ServerSettings.IndexOf(Settings.StreamingAssetsSetting);
+
+
+                var newEditorIndex = EditorGUILayout.Popup("Editor Setting", editorIndex, namesWithSim);
+
+                GUILayout.Space(12f);
+                GUILayout.Label ("Player Server Setting", "BoldLabel");
+
+                var newDevIndex = EditorGUILayout.Popup("Development Build", devIndex, names);
+                var newReleaseIndex = EditorGUILayout.Popup("Release Build", releaseIndex, names);
+                var newStreamingAssetsIndex = EditorGUILayout.Popup("Streaming Assets", streamingIndex, names);
+
+                if (newEditorIndex != editorIndex) {
+                    if (newEditorIndex == 0) {
+                        Settings.Mode = Settings.AssetBundleManagerMode.SimulationMode;
+                    } else if (newEditorIndex == 1) {
+                        Settings.Mode = Settings.AssetBundleManagerMode.SimulationModeGraphTool;
+                    } else {
+                        Settings.Mode = Settings.AssetBundleManagerMode.Server;
+                        Settings.CurrentSetting = Settings.ServerSettings [newEditorIndex - 2];
+                    }
+                }
+                if (newDevIndex != devIndex) {
+                    if (Settings.ServerSettings.Count > newDevIndex) {
+                        Settings.DevelopmentBuildSetting = Settings.ServerSettings [newDevIndex];
+                    }
+                }
+                if (newReleaseIndex != releaseIndex) {
+                    if (Settings.ServerSettings.Count > newReleaseIndex) {
+                        Settings.ReleaseBuildSetting = Settings.ServerSettings [newReleaseIndex];
+                    }
+                }
+                if (newStreamingAssetsIndex != streamingIndex) {
+                    if (Settings.ServerSettings.Count > newStreamingAssetsIndex) {
+                        var newSetting = Settings.ServerSettings [newStreamingAssetsIndex];
+                        if (newSetting.ServerType == ServerSettingType.StreamingAssets) {
+                            Settings.StreamingAssetsSetting = newSetting;
+                        }
+                    }
+                }
 
                 GUILayout.Space(20f);
 
+                var curSetting = Settings.CurrentSetting;
+                if (curSetting != null) {
+                    bool isRunning = LaunchAssetBundleServer.IsRunning();
+                    EditorGUILayout.LabelField ("Local Server Running", isRunning.ToString());
+                    EditorGUILayout.LabelField ("Server URL", curSetting.ServerURL);
 
-                if (newClearCache != AssetBundleManager.CleanCacheOnPlay) {
-                    Settings.ClearCacheOnPlay = newClearCache;
-                }
+                    EditorGUILayout.HelpBox (LaunchAssetBundleServer.GetServerArgs(), MessageType.Info);
 
-                bool isRunning = LaunchAssetBundleServer.IsRunning();
-                EditorGUILayout.LabelField ("Local Server Running", isRunning.ToString());
-                EditorGUILayout.LabelField ("Server URL", curSetting.ServerURL);
-
-                EditorGUILayout.HelpBox (LaunchAssetBundleServer.GetServerArgs(), MessageType.Info);
-
-                using (new EditorGUI.DisabledScope(Settings.Mode != Settings.AssetBundleManagerMode.Server || curSetting == null || !curSetting.IsLocalServer)) {
-                    if (GUILayout.Button (isRunning ? "Stop Local Server": "Start Local Server")) {
-                        LaunchAssetBundleServer.ToggleLocalAssetBundleServer ();
+                    using (new EditorGUI.DisabledScope(Settings.Mode != Settings.AssetBundleManagerMode.Server || curSetting.ServerType != ServerSettingType.Local)) {
+                        if (GUILayout.Button (isRunning ? "Stop Local Server": "Start Local Server")) {
+                            LaunchAssetBundleServer.ToggleLocalAssetBundleServer ();
+                        }
                     }
+                    GUILayout.Space(8f);
                 }
             }
         }

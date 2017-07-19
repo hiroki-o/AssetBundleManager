@@ -18,7 +18,7 @@ namespace AssetBundles.Manager
 		private int 	m_ServerPID = 0;
 
         [SerializeField]
-        private Settings.ServerSetting m_launchedSetting;
+        private ServerSetting m_launchedSetting;
 
         [SerializeField]
         private string     m_args;
@@ -60,7 +60,7 @@ namespace AssetBundles.Manager
             return instance.m_args;
         }
 
-        public static Settings.ServerSetting GetServerSetting() {
+        public static ServerSetting GetServerSetting() {
             return instance.m_launchedSetting;
         }
 

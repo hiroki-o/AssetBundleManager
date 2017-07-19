@@ -54,145 +54,6 @@ namespace AssetBundles.Manager {
             #endif
         }
 
-        [Serializable]
-        public class ServerSetting {
-            static string s_localServerURL;
-
-            [SerializeField] private string m_name;
-            [SerializeField] private string m_serverURL;
-            [SerializeField] private string m_localAssetBundleDirectory;
-            [SerializeField] private string m_manifestFileName;
-            [SerializeField] private bool m_isLocalServer;
-            [SerializeField] private bool m_isStreamingAssets;
-            [SerializeField] private bool m_withPlatformSubDir;
-
-            public ServerSetting(string name, bool isLocalServer, bool isStreamingAssets) {
-                m_name = name;
-                m_isLocalServer = isLocalServer;
-                m_isStreamingAssets = isStreamingAssets;
-                m_withPlatformSubDir = false;
-                m_localAssetBundleDirectory = string.Empty;
-                m_serverURL = string.Empty;
-            }
-
-            public string Name {
-                get {
-                    return m_name;
-                }
-
-                #if UNITY_EDITOR
-                set {
-                    m_name = value;
-                    Settings.SetSettingsDirty ();
-                }
-                #endif
-            }
-
-            public string ServerURL {
-                get {
-                    string url;
-                    if (m_isLocalServer) {
-                        url = GetLocalServerURL ();
-                    }else if(m_isStreamingAssets) {
-                        url = GetStreamingAssetsURL(m_serverURL);
-                    } else {
-                        url = m_serverURL;
-                    }
-                    if (m_withPlatformSubDir) {
-                        return string.Format ("{0}{1}/",url, Utility.GetPlatformName());
-                    } else {
-                        return url;
-                    }
-                }
-                #if UNITY_EDITOR
-                set {
-                    m_serverURL = value;
-                    Settings.SetSettingsDirty ();
-                }
-                #endif
-            }
-
-            public string AssetBundleDirectory {
-                get {
-                    return m_localAssetBundleDirectory;
-                }
-                #if UNITY_EDITOR
-                set {
-                    m_localAssetBundleDirectory = value;
-                    Settings.SetSettingsDirty ();
-                }
-                #endif
-            }
-
-            public string ManifestFileName {
-                get {
-                    if (m_withPlatformSubDir) {
-                        return Utility.GetPlatformName ();
-                    } else {
-                        return m_manifestFileName;
-                    }
-                }
-                #if UNITY_EDITOR
-                set {
-                    m_manifestFileName = value;
-                    Settings.SetSettingsDirty ();
-                }
-                #endif
-            }
-
-            public bool IsLocalServer {
-                get {
-                    return m_isLocalServer;
-                }
-            }
-
-            public bool IsStreamingAssets {
-                get {
-                    return m_isStreamingAssets;
-                }
-            }
-
-            public bool UsePlatformSubDir {
-                get {
-                    return m_withPlatformSubDir;
-                }
-                #if UNITY_EDITOR
-                set {
-                    m_withPlatformSubDir = value;
-                    Settings.SetSettingsDirty ();
-                }
-                #endif
-            }
-
-            private static string GetLocalServerURL() {
-                if (s_localServerURL == null) {
-                    IPHostEntry host;
-                    string localIP = "";
-                    string hostName = Dns.GetHostName ();
-                    try {
-                        host = Dns.GetHostEntry(hostName);
-                    } catch (SocketException ) {
-                        host = Dns.GetHostEntry("127.0.0.1");
-                    }
-
-                    foreach (IPAddress ip in host.AddressList)
-                    {
-                        if (ip.AddressFamily == AddressFamily.InterNetwork)
-                        {
-                            localIP = ip.ToString();
-                            break;
-                        }
-                    }
-                    s_localServerURL = "http://"+localIP+":7888/";
-                }
-                return s_localServerURL;
-            }
-
-            private static string GetStreamingAssetsURL(string str) {
-                return string.Format ("file://{0}/{1}", Application.streamingAssetsPath, str);
-            }
-        }
-
         public enum AssetBundleManagerMode : int {
             SimulationMode,
             SimulationModeGraphTool,
@@ -203,6 +64,7 @@ namespace AssetBundles.Manager {
         [SerializeField] ServerSetting m_currentSetting;
         [SerializeField] ServerSetting m_devBuildSetting;
         [SerializeField] ServerSetting m_releaseBuildSetting;
+        [SerializeField] ServerSetting m_streamingAssetSetting;
         [SerializeField] AssetBundleManagerMode m_mode;
         [SerializeField] AssetMap m_assetMap;
         [SerializeField] private bool m_clearCacheOnPlay;
@@ -296,7 +158,7 @@ namespace AssetBundles.Manager {
             }
         }
 
-        public static IEnumerable<Settings.ServerSetting> ServerSettings {
+        public static List<ServerSetting> ServerSettings {
             get{ 
                 return GetSettings ().m_settings;
             }
@@ -329,6 +191,18 @@ namespace AssetBundles.Manager {
             #endif
         }
 
+        public static ServerSetting StreamingAssetsSetting {
+            get {
+                return GetSettings ().m_streamingAssetSetting;
+            }
+            #if UNITY_EDITOR
+            set {
+                var s = GetSettings();
+                s.m_streamingAssetSetting = value;
+                EditorUtility.SetDirty(s);
+            }
+            #endif
+        }
 
         public static AssetBundleManagerMode Mode {
             get{
@@ -357,26 +231,17 @@ namespace AssetBundles.Manager {
         }
 
         #if UNITY_EDITOR
-        public static ServerSetting CreateServerSetting(string name, bool isLocalServer) {
-            var newSetting = new ServerSetting (name, isLocalServer, false);
+            public static ServerSetting CreateServerSetting(string name, ServerSettingType t) {
+            var newSetting = ServerSetting.CreateServerSetting (name, t);
+
+            AssetDatabase.AddObjectToAsset (newSetting, Path.SettingsFilePath);
+
             var s = GetSettings ();
             s.m_settings.Add (newSetting);
-            s.m_currentSetting = newSetting;
             EditorUtility.SetDirty (s);
 
             return newSetting;
         }
-
-            public static ServerSetting CreateStreamingAssetSetting(string name) {
-                var newSetting = new ServerSetting (name, false, true);
-            var s = GetSettings ();
-            s.m_settings.Add (newSetting);
-            s.m_currentSetting = newSetting;
-            EditorUtility.SetDirty (s);
-
-            return newSetting;
-        }
-
 
         public static void RemoveServerSetting(ServerSetting removingSetting) {
             var s = GetSettings();
@@ -384,6 +249,17 @@ namespace AssetBundles.Manager {
             if(s.m_currentSetting == removingSetting) {
                 s.m_currentSetting = null;
             }
+            if(s.m_devBuildSetting == removingSetting) {
+                s.m_devBuildSetting = null;
+            }
+            if(s.m_releaseBuildSetting == removingSetting) {
+                s.m_releaseBuildSetting = null;
+            }
+            if(s.m_streamingAssetSetting== removingSetting) {
+                s.m_streamingAssetSetting = null;
+            }
+            ScriptableObject.DestroyImmediate (removingSetting, true);
+            EditorUtility.SetDirty (s);
         }
 
         public static void SetSettingsDirty() {
