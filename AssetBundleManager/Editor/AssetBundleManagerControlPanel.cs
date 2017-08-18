@@ -13,7 +13,6 @@ namespace AssetBundles.Manager {
 
         private static AssetBundleManagerControlPanel s_window;
 
-        private string m_menuTitle;
         List<ServerSetting> m_removingItem;
         Vector2 m_scroll;
 
@@ -31,25 +30,6 @@ namespace AssetBundles.Manager {
         private void Init() {
             this.titleContent = new GUIContent("ABM Server");
             m_removingItem = new List<ServerSetting>();
-
-            ConfigureMenuSelectionName ();
-        }
-
-        private void ConfigureMenuSelectionName () {
-            if(Settings.Mode == Settings.AssetBundleManagerMode.SimulationMode) {
-                m_menuTitle = "Simulation Mode";
-            }
-            else if(Settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool) {
-                m_menuTitle = "Simulation Mode(GraphTool)";
-            }
-            else {
-                var s = Settings.CurrentSetting;
-                if(s != null) {
-                    m_menuTitle = s.Name;
-                } else {
-                    m_menuTitle = "<select server>";
-                }
-            }
         }
 
         public void OnEnable () {
@@ -108,7 +88,6 @@ namespace AssetBundles.Manager {
                         var newName = EditorGUILayout.TextField("Name", s.Name);
                         if (newName != s.Name) {
                             s.Name = newName;
-                            ConfigureMenuSelectionName ();
                         }
 
                         var newType = (ServerSettingType)EditorGUILayout.EnumPopup ("Server Type", s.ServerType);
