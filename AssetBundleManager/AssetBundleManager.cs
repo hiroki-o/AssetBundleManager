@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 #if UNITY_EDITOR	
 using UnityEditor;
-using UnityEngine.AssetBundles.GraphTool;
 #endif
 using System.Collections;
 using System.Collections.Generic;
@@ -447,7 +446,7 @@ namespace AssetBundles.Manager
                 string[] assetPaths = null;
                 if (Settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool)
                 {
-                    assetPaths = AssetBundleBuildMap.GetBuildMap().GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, assetName);
+                    assetPaths = UnityEngine.AssetGraph.AssetBundleBuildMap.GetBuildMap().GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, assetName);
                 }
                 else
                 {

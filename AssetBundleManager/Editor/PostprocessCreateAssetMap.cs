@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-using UnityEngine.AssetBundles.GraphTool;
+using UnityEngine.AssetGraph;
 
 namespace AssetBundles.Manager
 {

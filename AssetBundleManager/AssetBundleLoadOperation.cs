@@ -40,7 +40,7 @@ namespace AssetBundles.Manager
 		{
 			string[] levelPaths = null;
             if(Settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool) {
-				levelPaths = UnityEngine.AssetBundles.GraphTool.AssetBundleBuildMap.GetBuildMap().GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, levelName);
+                levelPaths = UnityEngine.AssetGraph.AssetBundleBuildMap.GetBuildMap().GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, levelName);
 			} else {
 				levelPaths = UnityEditor.AssetDatabase.GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, levelName);
 			}
