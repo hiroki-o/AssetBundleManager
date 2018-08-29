@@ -1,0 +1,10 @@
+{
+    "name": "AssetBundles.Manager",
+    "references": [
+        "Unity.AssetGraph"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}

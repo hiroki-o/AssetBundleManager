@@ -1,0 +1,14 @@
+{
+    "name": "AssetBundles.Manager.Editor",
+    "references": [
+        "Unity.AssetGraph",
+        "Unity.AssetGraph.Editor",
+        "AssetBundles.Manager"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}

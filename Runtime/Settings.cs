@@ -39,7 +39,7 @@ namespace AssetBundles.Manager {
                     UnityEngine.Object.DestroyImmediate (obj);
 
                     var fileInfo = new FileInfo(configGuiPath);
-                    var baseDir = fileInfo.Directory;
+                    var baseDir = fileInfo.Directory.Parent;
 
                     Assert.AreEqual ("AssetBundleManager", baseDir.Name);
 
