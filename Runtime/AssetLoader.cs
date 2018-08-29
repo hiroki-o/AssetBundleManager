@@ -4,9 +4,7 @@ using System.Collections;
 namespace AssetBundles.Manager {
     public class AssetLoader : MonoBehaviour
     {
-    	public const string AssetBundlesOutputPath = "/AssetBundles/";
-    	public string assetBundleName;
-    	public string assetName;
+        public string assetPath;
 
     	// Use this for initialization
     	IEnumerator Start ()
@@ -14,7 +12,7 @@ namespace AssetBundles.Manager {
     		yield return StartCoroutine(Initialize() );
     		
     		// Load asset.
-    		yield return StartCoroutine(InstantiateGameObjectAsync (assetBundleName, assetName) );
+            yield return StartCoroutine(InstantiateGameObjectAsync (assetPath) );
     	}
 
     	// Initialize the downloading url and AssetBundleManifest object.
@@ -29,8 +27,11 @@ namespace AssetBundles.Manager {
     			yield return StartCoroutine(request);
     	}
 
-    	protected IEnumerator InstantiateGameObjectAsync (string assetBundleName, string assetName)
+    	protected IEnumerator InstantiateGameObjectAsync (string assetPath)
     	{
+            var assetName = System.IO.Path.GetFileNameWithoutExtension (assetPath).ToLower();
+            var assetBundleName = Settings.Map.GetAssetBundleName (assetPath);
+
     		// This is simply to get the elapsed time for this phase of AssetLoading.
     		float startTime = Time.realtimeSinceStartup;
 
