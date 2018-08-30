@@ -11,6 +11,7 @@ namespace AssetBundles.Manager {
     public class AssetLoaderEditor : Editor {
 
         [SerializeField] private SerializedProperty m_assetPath;
+        [SerializeField] private SerializedProperty m_variants;
 
         public override bool RequiresConstantRepaint() {
             return true;
@@ -19,6 +20,7 @@ namespace AssetBundles.Manager {
         public override void OnInspectorGUI () {
 
             m_assetPath = serializedObject.FindProperty("assetPath");
+            m_variants = serializedObject.FindProperty("variants");
 
             var map = Settings.Map;
             List<string> assets = null;
@@ -48,6 +50,9 @@ namespace AssetBundles.Manager {
             if (newSceneIndex != sceneIndex) {
                 m_assetPath.stringValue = assets[newSceneIndex];
             }
+
+            EditorGUILayout.PropertyField(m_variants, new GUIContent("Variants"), true);
+            
 
             serializedObject.ApplyModifiedProperties ();
         }

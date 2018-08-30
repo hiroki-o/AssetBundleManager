@@ -5,6 +5,7 @@ namespace AssetBundles.Manager {
     public class AssetLoader : MonoBehaviour
     {
         public string assetPath;
+	    public string[] variants;
 
     	// Use this for initialization
     	IEnumerator Start ()
@@ -31,6 +32,11 @@ namespace AssetBundles.Manager {
     	{
             var assetName = System.IO.Path.GetFileNameWithoutExtension (assetPath).ToLower();
             var assetBundleName = Settings.Map.GetAssetBundleName (assetPath);
+
+		    if (variants != null)
+		    {
+			    AssetBundles.Manager.AssetBundleManager.ActiveVariants = variants;
+		    }
 
     		// This is simply to get the elapsed time for this phase of AssetLoading.
     		float startTime = Time.realtimeSinceStartup;
