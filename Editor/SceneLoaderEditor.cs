@@ -12,6 +12,8 @@ namespace AssetBundles.Manager {
 
         [SerializeField] private SerializedProperty m_sceneNamePath;
         [SerializeField] private SerializedProperty m_loadEventHandler;
+        [SerializeField] private SerializedProperty m_startOnLoad;
+        [SerializeField] private SerializedProperty m_isAdditive;
 
         public override bool RequiresConstantRepaint() {
             return true;
@@ -21,8 +23,17 @@ namespace AssetBundles.Manager {
 
             m_sceneNamePath = serializedObject.FindProperty("sceneName");
             m_loadEventHandler = serializedObject.FindProperty("loadEventHandler");
+            m_startOnLoad = serializedObject.FindProperty("startOnLoad");
+            m_isAdditive = serializedObject.FindProperty("isAdditive");
 
-            var map = Settings.Map;
+            var settings = GlobalSettings.GetActiveSettings();
+            if (settings == null)
+            {
+                EditorGUILayout.HelpBox("Active ABM Settings not found. Please configure from ABM Server Control Panel.", MessageType.Error);
+                return;
+            }
+            
+            var map = settings.Map;
             List<string> scenes = null;
             if (map != null) {
                 scenes = map.GetScenes ();
@@ -52,6 +63,8 @@ namespace AssetBundles.Manager {
             }
 
             EditorGUILayout.PropertyField (m_loadEventHandler);
+            EditorGUILayout.PropertyField(m_startOnLoad);
+            EditorGUILayout.PropertyField(m_isAdditive);
 
             serializedObject.ApplyModifiedProperties ();
         }

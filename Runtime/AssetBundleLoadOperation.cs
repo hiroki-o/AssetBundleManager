@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.SceneManagement;
-using Unity.AssetGraph;
+using UnityEngine.AssetGraph;
 
 namespace AssetBundles.Manager
 {
@@ -39,8 +39,16 @@ namespace AssetBundles.Manager
 	
 		public AssetBundleLoadLevelSimulationOperation (string assetBundleName, string levelName, bool isAdditive)
 		{
+			var settings = GlobalSettings.GetActiveSettings();
+			if (settings == null)
+			{
+				Debug.LogError("ABM Active Setting is missing.");
+				m_isError = true;
+				return;
+			}
+			
 			string[] levelPaths = null;
-            if(Settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool) {
+            if(settings.Mode == Settings.AssetBundleManagerMode.SimulationModeGraphTool) {
 				levelPaths = AssetBundleBuildMap.GetBuildMap().GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, levelName);
 			} else {
 				levelPaths = UnityEditor.AssetDatabase.GetAssetPathsFromAssetBundleAndAssetName(assetBundleName, levelName);
@@ -98,7 +106,7 @@ namespace AssetBundles.Manager
 			if (m_Request != null)
 				return false;
 			
-			LoadedAssetBundle bundle = AssetBundleManager.GetLoadedAssetBundle (m_AssetBundleName, out m_DownloadingError);
+			LoadedAssetBundle bundle = AssetBundleManager.GetManager().GetLoadedAssetBundle (m_AssetBundleName, out m_DownloadingError);
             if (bundle != null) {
                 var mode = LoadSceneMode.Single;
                 if (m_IsAdditive) {
@@ -194,7 +202,7 @@ namespace AssetBundles.Manager
 			if (m_Request != null)
 				return false;
 	
-			LoadedAssetBundle bundle = AssetBundleManager.GetLoadedAssetBundle (m_AssetBundleName, out m_DownloadingError);
+			LoadedAssetBundle bundle = AssetBundleManager.GetManager().GetLoadedAssetBundle (m_AssetBundleName, out m_DownloadingError);
 			if (bundle != null)
 			{
 				///@TODO: When asset bundle download fails this throws an exception...
@@ -238,7 +246,7 @@ namespace AssetBundles.Manager
 			
 			if (m_Request != null && m_Request.isDone)
 			{
-				AssetBundleManager.AssetBundleManifestObject = GetAsset<AssetBundleManifest>();
+				AssetBundleManager.GetManager().AssetBundleManifestObject = GetAsset<AssetBundleManifest>();
 				return false;
 			}
 			else

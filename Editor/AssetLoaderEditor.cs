@@ -22,7 +22,14 @@ namespace AssetBundles.Manager {
             m_assetPath = serializedObject.FindProperty("assetPath");
             m_variants = serializedObject.FindProperty("variants");
 
-            var map = Settings.Map;
+            var settings = GlobalSettings.GetActiveSettings();
+            if (settings == null)
+            {
+                EditorGUILayout.HelpBox("Active ABM Settings not found. Please configure from ABM Server Control Panel.", MessageType.Error);
+                return;
+            }
+            
+            var map = settings.Map;
             List<string> assets = null;
             if (map != null) {
                 assets = map.GetAllAssets ();

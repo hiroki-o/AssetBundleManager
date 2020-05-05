@@ -6,7 +6,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 
-using Unity.AssetGraph;
+using UnityEngine.AssetGraph;
 
 namespace AssetBundles.Manager
 {
@@ -36,7 +36,11 @@ namespace AssetBundles.Manager
     		}
 
             if (newMap != null) {
-                Settings.Map = newMap;
+                var settings = GlobalSettings.GetActiveSettings();
+                if (settings != null)
+                {
+                    settings.Map = newMap;
+                }
             }
     	}
     }

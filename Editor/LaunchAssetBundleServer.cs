@@ -85,16 +85,23 @@ namespace AssetBundles.Manager
 			{
 			}
 		}
-		
-		static void Run ()
-		{
-            var serverSetting = Settings.CurrentSetting;
 
-            string pathToAssetServer = Path.Combine(Settings.Path.BaseFullPath, "Editor/AssetBundleServer.exe");
+		public static void Run ()
+		{
+			var settings = GlobalSettings.GetActiveSettings();
+			if (settings == null)
+			{
+				UnityEngine.Debug.LogError("Active ABM Settings not found. Please configure from ABM Server Control Panel.");
+				return;
+			}
+
+			var serverSetting = settings.CurrentSetting;
+
+            var pathToAssetServer = Path.Combine(GlobalSettings.Path.BaseFullPath, "Editor/AssetBundleServer.exe");
 	
 			KillRunningAssetBundleServer();
 			
-            string bundleFolder = serverSetting.AssetBundleDirectory;
+            var bundleFolder = serverSetting.AssetBundleDirectory;
 
             if (bundleFolder.IndexOf ('/') != 0) {
                 var projectPath = Directory.GetParent(Application.dataPath).ToString();
@@ -115,7 +122,7 @@ namespace AssetBundles.Manager
 			string monoProfile = "4.0";
 			#endif
 
-            var args = string.Format("\"{0}\" {1}", bundleFolder, Process.GetCurrentProcess().Id);
+            var args = $"\"{bundleFolder}\" {Process.GetCurrentProcess().Id}";
 			ProcessStartInfo startInfo = ExecuteInternalMono.GetProfileStartInfoForMono(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), monoProfile, pathToAssetServer, args, true);
             startInfo.WorkingDirectory = bundleFolder;
 			startInfo.UseShellExecute = false;

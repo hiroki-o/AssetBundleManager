@@ -26,33 +26,8 @@ namespace AssetBundles.Manager {
         [SerializeField] private string m_manifestFileName;
         [SerializeField] private ServerSettingType m_serverType;
         [SerializeField] private bool m_withPlatformSubDir;
-
-        public static ServerSetting CreateServerSetting(string name, ServerSettingType t) {
-
-            var newSetting = ScriptableObject.CreateInstance<ServerSetting> ();
-
-            newSetting.name = name;
-            newSetting.m_serverType = t;
-            newSetting.m_withPlatformSubDir = false;
-            newSetting.m_localAssetBundleDirectory = string.Empty;
-            newSetting.m_serverURL = string.Empty;
-
-            return newSetting;
-        }
-
-
-        public string Name {
-            get {
-                return this.name;
-            }
-
-            #if UNITY_EDITOR
-            set {
-                this.name = value;
-                Settings.SetSettingsDirty ();
-            }
-            #endif
-        }
+        
+        public string Name => name;
 
         public string ServerURL {
             get {
@@ -74,62 +49,15 @@ namespace AssetBundles.Manager {
                     return url;
                 }
             }
-            #if UNITY_EDITOR
-            set {
-                m_serverURL = value;
-                Settings.SetSettingsDirty ();
-            }
-            #endif
         }
 
-        public string AssetBundleDirectory {
-            get {
-                return m_localAssetBundleDirectory;
-            }
-            #if UNITY_EDITOR
-            set {
-                m_localAssetBundleDirectory = value;
-                Settings.SetSettingsDirty ();
-            }
-            #endif
-        }
+        public string AssetBundleDirectory => m_localAssetBundleDirectory;
 
-        public string ManifestFileName {
-            get {
-                if (m_withPlatformSubDir) {
-                    return Utility.GetPlatformName ();
-                } else {
-                    return m_manifestFileName;
-                }
-            }
-            #if UNITY_EDITOR
-            set {
-                m_manifestFileName = value;
-                Settings.SetSettingsDirty ();
-            }
-            #endif
-        }
+        public string ManifestFileName => m_withPlatformSubDir ? Utility.GetPlatformName () : m_manifestFileName;
 
-        public ServerSettingType ServerType {
-            get {
-                return m_serverType;
-            }
-            set {
-                m_serverType = value;
-            }
-        }
+        public ServerSettingType ServerType => m_serverType;
 
-        public bool UsePlatformSubDir {
-            get {
-                return m_withPlatformSubDir;
-            }
-            #if UNITY_EDITOR
-            set {
-                m_withPlatformSubDir = value;
-                Settings.SetSettingsDirty ();
-            }
-            #endif
-        }
+        public bool UsePlatformSubDir => m_withPlatformSubDir;
 
         private static string GetLocalServerURL() {
             if (s_localServerURL == null) {
@@ -156,7 +84,7 @@ namespace AssetBundles.Manager {
         }
 
         private static string GetStreamingAssetsURL(string str) {
-            return string.Format ("file://{0}/{1}", Application.streamingAssetsPath, str);
+            return $"file://{Application.streamingAssetsPath}/{str}";
         }
     }
 }

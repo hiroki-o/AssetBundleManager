@@ -1,0 +1,12 @@
+{
+	"name": "com.unity.assetbundlemanager",
+	"displayName": "Asset Bundle Manager",
+	"version": "1.4.0-preview",
+	"unity": "2018.4",
+	"description": "AssetBundleManager is a simple library to manager Asset Bundle on Runtime.",
+	"keywords": ["asset", "bundle"],
+	"category": "Asset Bundles",
+	"dependencies": {
+		"com.unity.assetgraph" : "1.6.0-preview"
+	}
+}

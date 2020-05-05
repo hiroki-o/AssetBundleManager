@@ -22,27 +22,34 @@ namespace AssetBundles.Manager {
     		// Don't destroy this gameObject as we depend on it to run the loading script.
     		DontDestroyOnLoad(gameObject);
 
-    		// Initialize AssetBundleManifest which loads the AssetBundleManifest object.
-    		var request = AssetBundleManager.Initialize();
-    		if (request != null)
-    			yield return StartCoroutine(request);
+            var manager = AssetBundleManager.GetManager();
+            if (!manager.IsInitialized)
+            {
+	            // Initialize AssetBundleManifest which loads the AssetBundleManifest object.
+	            var request = AssetBundleManager.GetManager().Initialize();
+    		
+	            if (request != null) {
+		            yield return StartCoroutine (request);
+	            }
+            }
     	}
 
     	protected IEnumerator InstantiateGameObjectAsync (string assetPath)
-    	{
+        {
+	        var manager = AssetBundleManager.GetManager();
             var assetName = System.IO.Path.GetFileNameWithoutExtension (assetPath).ToLower();
-            var assetBundleName = Settings.Map.GetAssetBundleName (assetPath);
+            var assetBundleName = manager.Settings.Map.GetAssetBundleName (assetPath);
 
 		    if (variants != null)
 		    {
-			    AssetBundles.Manager.AssetBundleManager.ActiveVariants = variants;
+			    manager.ActiveVariants = variants;
 		    }
 
     		// This is simply to get the elapsed time for this phase of AssetLoading.
     		float startTime = Time.realtimeSinceStartup;
 
     		// Load asset from assetBundle.
-    		AssetBundleLoadAssetOperation request = AssetBundleManager.LoadAssetAsync(assetBundleName, assetName, typeof(GameObject) );
+    		AssetBundleLoadAssetOperation request = manager.LoadAssetAsync(assetBundleName, assetName, typeof(GameObject) );
     		if (request == null)
     			yield break;
     		yield return StartCoroutine(request);

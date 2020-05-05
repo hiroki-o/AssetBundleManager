@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 #if UNITY_EDITOR	
 using UnityEditor;
-using Unity.AssetGraph;
+using UnityEngine.AssetGraph;
 #endif
 using System.Collections;
 using System.Collections.Generic;
@@ -41,64 +41,75 @@ namespace AssetBundles.Manager
         public enum LogMode { All, JustErrors };
         public enum LogType { Info, Warning, Error };
 
-        static LogMode m_LogMode = LogMode.All;
-        static string[] m_ActiveVariants = { };
-        static AssetBundleManifest m_AssetBundleManifest = null;
+        private AssetBundleManifest m_AssetBundleManifest = null;
 
-        static Dictionary<string, LoadedAssetBundle> m_LoadedAssetBundles = new Dictionary<string, LoadedAssetBundle>();
-        static Dictionary<string, WWW> m_DownloadingWWWs = new Dictionary<string, WWW>();
-        static Dictionary<string, string> m_DownloadingErrors = new Dictionary<string, string>();
-        static List<AssetBundleLoadOperation> m_InProgressOperations = new List<AssetBundleLoadOperation>();
-        static Dictionary<string, string[]> m_Dependencies = new Dictionary<string, string[]>();
+        private Dictionary<string, LoadedAssetBundle> m_LoadedAssetBundles = new Dictionary<string, LoadedAssetBundle>();
+        private Dictionary<string, WWW> m_DownloadingWWWs = new Dictionary<string, WWW>();
+        private Dictionary<string, string> m_DownloadingErrors = new Dictionary<string, string>();
+        private List<AssetBundleLoadOperation> m_InProgressOperations = new List<AssetBundleLoadOperation>();
+        private Dictionary<string, string[]> m_Dependencies = new Dictionary<string, string[]>();
+        private Settings m_settings;
 
-        public static LogMode logMode
-        {
-            get { return m_LogMode; }
-            set { m_LogMode = value; }
-        }
+        private static AssetBundleManager s_manager;
+        
+        public static LogMode logMode { get; set; } = LogMode.All;
 
         // Variants which is used to define the active variants.
-        public static string[] ActiveVariants
+        public string[] ActiveVariants { get; set; } = { };
+
+        // AssetBundleManifest object which can be used to load the dependencies and check suitable assetBundle variants.
+        public AssetBundleManifest AssetBundleManifestObject
         {
-            get { return m_ActiveVariants; }
-            set { m_ActiveVariants = value; }
+            set => m_AssetBundleManifest = value;
         }
 
-        // AssetBundleManifest object which can be used to load the dependecies and check suitable assetBundle variants.
-        public static AssetBundleManifest AssetBundleManifestObject
-        {
-            set { m_AssetBundleManifest = value; }
-        }
+        public bool IsInitialized => m_AssetBundleManifest != null;
+
+        public Settings Settings => m_settings;
+        
+        public delegate void OnBundleLoaded(string bundleName);
+        public event OnBundleLoaded onBundleLoaded;
 
         private static void Log(LogType logType, string text)
         {
             if (logType == LogType.Error)
                 Debug.LogError("[AssetBundleManager] " + text);
-            else if (m_LogMode == LogMode.All)
+            else if (logMode == LogMode.All)
                 Debug.Log("[AssetBundleManager] " + text);
         }
 
 #if UNITY_EDITOR
         // Flag to indicate if we want to simulate assetBundles in Editor without building them actually.
-        public static bool SimulateAssetBundleInEditor
-        {
-            get
-            {
-                return Settings.Mode != Settings.AssetBundleManagerMode.Server;
-            }
-        }
+        public bool SimulateAssetBundleInEditor => m_settings.Mode != Settings.AssetBundleManagerMode.Server;
 
-        public static bool CleanCacheOnPlay
-        {
-            get
-            {
-                return Settings.ClearCacheOnPlay;
-            }
-        }
-
+        public bool CleanCacheOnPlay => m_settings.ClearCacheOnPlay;
 #endif
 
-        private static string GetStreamingAssetsPath()
+        public static AssetBundleManager GetManager()
+        {
+            if (s_manager == null)
+            {
+                var go = new GameObject("AssetBundleManager", typeof(AssetBundleManager));
+                DontDestroyOnLoad(go);
+                s_manager = go.GetComponent<AssetBundleManager>();
+                s_manager.m_settings = GlobalSettings.GetActiveSettings();
+            }
+
+            return s_manager;
+        }
+
+        public void ResetManager()
+        {
+            if (m_LoadedAssetBundles.Count != 0) Debug.LogError("m_LoadedAssetBundles != 0");
+            if (m_DownloadingWWWs.Count != 0) Debug.LogError("m_DownloadingWWWs != 0");
+            if (m_InProgressOperations.Count != 0) Debug.LogError("m_InProgressOperations != 0");
+            if (m_Dependencies.Count != 0) Debug.LogError("m_Dependencies != 0");
+
+            m_DownloadingErrors.Clear();
+            m_AssetBundleManifest = null;
+        }
+        
+        private string GetStreamingAssetsPath()
         {
             if (Application.isEditor)
                 return "file://" + System.Environment.CurrentDirectory.Replace("\\", "/"); // Use the build output folder directly.
@@ -113,7 +124,7 @@ namespace AssetBundles.Manager
         }
 
         // Get loaded AssetBundle, only return vaild object when all the dependencies are downloaded successfully.
-        static public LoadedAssetBundle GetLoadedAssetBundle(string assetBundleName, out string error)
+        public LoadedAssetBundle GetLoadedAssetBundle(string assetBundleName, out string error)
         {
             if (m_DownloadingErrors.TryGetValue(assetBundleName, out error))
                 return null;
@@ -145,15 +156,12 @@ namespace AssetBundles.Manager
         }
 
         // Load AssetBundleManifest.
-        static public AssetBundleLoadManifestOperation Initialize()
+        public AssetBundleLoadManifestOperation Initialize()
         {
 #if UNITY_EDITOR
             Log(LogType.Info, "Simulation Mode: " + (SimulateAssetBundleInEditor ? "Enabled" : "Disabled"));
 #endif
-
-            var go = new GameObject("AssetBundleManager", typeof(AssetBundleManager));
-            DontDestroyOnLoad(go);
-
+            
 #if UNITY_EDITOR
             // If we're in Editor simulation mode, we don't need the manifest assetBundle.
             if (SimulateAssetBundleInEditor)
@@ -172,14 +180,14 @@ namespace AssetBundles.Manager
             }
 #endif
 
-            LoadAssetBundle(Settings.CurrentSetting.ManifestFileName, true);
+            LoadAssetBundle(m_settings.CurrentSetting.ManifestFileName, true);
             var operation = new AssetBundleLoadManifestOperation(Settings.CurrentSetting.ManifestFileName, "AssetBundleManifest", typeof(AssetBundleManifest));
             m_InProgressOperations.Add(operation);
             return operation;
         }
 
         // Load AssetBundle and its dependencies.
-        static protected void LoadAssetBundle(string assetBundleName, bool isLoadingAssetBundleManifest = false)
+        protected void LoadAssetBundle(string assetBundleName, bool isLoadingAssetBundleManifest = false)
         {
             Log(LogType.Info, "Loading Asset Bundle " + (isLoadingAssetBundleManifest ? "Manifest: " : ": ") + assetBundleName);
 
@@ -201,13 +209,17 @@ namespace AssetBundles.Manager
             // Check if the assetBundle has already been processed.
             bool isAlreadyProcessed = LoadAssetBundleInternal(assetBundleName, isLoadingAssetBundleManifest);
 
+            if (!isAlreadyProcessed)
+            {
+                onBundleLoaded?.Invoke(assetBundleName);
+            }
             // Load dependencies.
             if (!isAlreadyProcessed && !isLoadingAssetBundleManifest)
                 LoadDependencies(assetBundleName);
         }
 
         // Remaps the asset bundle name to the best fitting asset bundle variant.
-        static protected string RemapVariantName(string assetBundleName)
+        protected string RemapVariantName(string assetBundleName)
         {
             string[] bundlesWithVariant = null;
 #if UNITY_EDITOR
@@ -242,7 +254,7 @@ namespace AssetBundles.Manager
                 if (curSplit[0] != split[0])
                     continue;
 
-                int found = System.Array.IndexOf(m_ActiveVariants, curSplit[1]);
+                int found = System.Array.IndexOf(ActiveVariants, curSplit[1]);
 
                 // If there is no active variant found. We still want to use the first 
                 if (found == -1)
@@ -271,7 +283,7 @@ namespace AssetBundles.Manager
         }
 
         // Where we actuall call WWW to download the assetBundle.
-        static protected bool LoadAssetBundleInternal(string assetBundleName, bool isLoadingAssetBundleManifest)
+        protected bool LoadAssetBundleInternal(string assetBundleName, bool isLoadingAssetBundleManifest)
         {
             // Already loaded.
             LoadedAssetBundle bundle = null;
@@ -303,7 +315,7 @@ namespace AssetBundles.Manager
         }
 
         // Where we get all the dependencies and load them all.
-        static protected void LoadDependencies(string assetBundleName)
+        protected void LoadDependencies(string assetBundleName)
         {
             if (m_AssetBundleManifest == null)
             {
@@ -330,7 +342,7 @@ namespace AssetBundles.Manager
         }
 
         // Unload assetbundle and its dependencies.
-        static public void UnloadAssetBundle(string assetBundleName)
+        public void UnloadAssetBundle(string assetBundleName)
         {
 #if UNITY_EDITOR
             // If we're in Editor simulation mode, we don't have to load the manifest assetBundle.
@@ -346,7 +358,7 @@ namespace AssetBundles.Manager
             //Debug.Log(m_LoadedAssetBundles.Count + " assetbundle(s) in memory after unloading " + assetBundleName);
         }
 
-        static protected void UnloadDependencies(string assetBundleName)
+        protected void UnloadDependencies(string assetBundleName)
         {
             string[] dependencies = null;
             if (!m_Dependencies.TryGetValue(assetBundleName, out dependencies))
@@ -361,7 +373,7 @@ namespace AssetBundles.Manager
             m_Dependencies.Remove(assetBundleName);
         }
 
-        static protected void UnloadAssetBundleInternal(string assetBundleName)
+        protected void UnloadAssetBundleInternal(string assetBundleName)
         {
             string error;
             LoadedAssetBundle bundle = GetLoadedAssetBundle(assetBundleName, out error);
@@ -431,7 +443,7 @@ namespace AssetBundles.Manager
         }
 
         // Load asset from the given assetBundle.
-        static public AssetBundleLoadAssetOperation LoadAssetAsync(string assetBundleName, string assetName, System.Type type)
+        public AssetBundleLoadAssetOperation LoadAssetAsync(string assetBundleName, string assetName, System.Type type)
         {
             Log(LogType.Info, "Loading " + assetName + " from " + assetBundleName + " bundle");
 
@@ -477,7 +489,7 @@ namespace AssetBundles.Manager
         }
 
         // Load level from the given assetBundle.
-        static public AssetBundleLoadOperation LoadLevelAsync(string assetBundleName, string levelName, bool isAdditive)
+        public AssetBundleLoadOperation LoadLevelAsync(string assetBundleName, string levelName, bool isAdditive)
         {
             Log(LogType.Info, "Loading " + levelName + " from " + assetBundleName + " bundle");
 
@@ -504,5 +516,16 @@ namespace AssetBundles.Manager
 
             return operation;
         }
+        
+        public void UnloadAllAssetBundles()
+        {
+            var loadedBundleNames = new List<string>(m_LoadedAssetBundles.Keys);
+
+            foreach (var bundleName in loadedBundleNames)
+            {
+                UnloadAssetBundle(bundleName);
+            }
+        }
+        
     } // End of AssetBundleManager.
 }
