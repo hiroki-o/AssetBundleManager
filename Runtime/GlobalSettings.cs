@@ -159,6 +159,16 @@ namespace AssetBundles.Manager {
             //
             // return m_activeSetting;
 
+            if (m_settings.Count == 0)
+            {
+                return null;
+            }
+
+            if (m_activeSettingIndex >= m_settings.Count)
+            {
+                return null;
+            }
+
             return m_settings[m_activeSettingIndex];
         }
         

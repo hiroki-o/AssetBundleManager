@@ -105,6 +105,7 @@ namespace AssetBundles.Manager
             if (m_InProgressOperations.Count != 0) Debug.LogError("m_InProgressOperations != 0");
             if (m_Dependencies.Count != 0) Debug.LogError("m_Dependencies != 0");
 
+            m_settings = GlobalSettings.GetActiveSettings();
             m_DownloadingErrors.Clear();
             m_AssetBundleManifest = null;
         }
