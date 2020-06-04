@@ -83,8 +83,21 @@ namespace AssetBundles.Manager {
             return s_localServerURL;
         }
 
-        private static string GetStreamingAssetsURL(string str) {
-            return $"file://{Application.streamingAssetsPath}/{str}";
+        private static bool NeedsFileProtocol()
+        {
+            switch (Application.platform)
+            {
+                case RuntimePlatform.Android:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+        
+        private static string GetStreamingAssetsURL(string str)
+        {
+            var protocol = NeedsFileProtocol() ? "file://" : string.Empty;
+            return $"{protocol}{Application.streamingAssetsPath}/{str}";
         }
     }
 }
